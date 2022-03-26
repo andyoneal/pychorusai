@@ -55,7 +55,7 @@ class chorusai:
 
     @sleep_and_retry
     @limits(calls=10, period=TEN_MINUTES)
-    def __getFromAPI(s: requests.Session, url: str, headers: str, params: dict = {}):
+    def __getFromAPI(self, s: requests.Session, url: str, headers: str, params: dict = {}):
         return s.get(url, headers=headers, params=params).json()
 
     def __getData_v1(self, url=None, payload={}, req_page_key=None):
