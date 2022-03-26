@@ -119,6 +119,10 @@ class chorusai:
                 next_page = s.get(url, headers=auth_header,
                                   params=payload).json()
                 if data_key:
+                    if data_key not in next_page:
+                        print('Error:')
+                        print(next_page)
+                        return
                     yield next_page[data_key]
                 else:
                     yield next_page
