@@ -1,5 +1,8 @@
 import requests
 from dateutil import parser, utils, tz
+from ratelimit import limits, sleep_and_retry
+
+TEN_MINUTES = 60 * 10
 
 
 class chorusai:
@@ -50,6 +53,11 @@ class chorusai:
         payload['page[size]'] = 100
         yield from self.getData(url, payload=payload, data_key='data', req_page_key='page[number]')
 
+    @sleep_and_retry
+    @limits(calls=10, period=TEN_MINUTES)
+    def __getFromAPI(s: requests.Session, url: str, headers: str, params: dict = {}):
+        return s.get(url, headers=headers, params=params).json()
+
     def __getData_v1(self, url=None, payload={}, req_page_key=None):
         if url is None:
             print('URL missing')
@@ -59,7 +67,7 @@ class chorusai:
         data_key = 'data'
 
         with requests.Session() as s:
-            first_page = s.get(url, headers=auth_header, params=payload).json()
+            first_page = self.__getFromAPI(s, url, auth_header, payload)
             if isinstance(first_page, dict) and 'errors' in first_page.keys():
                 print('Error:')
                 print(first_page['errors'])
@@ -75,8 +83,7 @@ class chorusai:
                 page_size = payload.get('page[size]')
                 while num_returned == page_size:
                     payload[req_page_key] += 1
-                    next_page = s.get(url, headers=auth_header,
-                                      params=payload).json()
+                    next_page = self.__getFromAPI(s, url, auth_header, payload)
                     if isinstance(first_page, dict) and 'errors' in first_page.keys():
                         print('Error:')
                         print(next_page['errors'])
@@ -90,8 +97,7 @@ class chorusai:
 
                 while page_val != None:
                     payload[req_page_key] = page_val
-                    next_page = s.get(url, headers=auth_header,
-                                      params=payload).json()
+                    next_page = self.__getFromAPI(s, url, auth_header, payload)
                     yield next_page[data_key]
                     page_val = first_page.get('meta', {}).get(
                         'page', {}).get('cursor')
@@ -104,7 +110,7 @@ class chorusai:
         auth_header = self.auth_header
 
         with requests.Session() as s:
-            first_page = s.get(url, headers=auth_header, params=payload).json()
+            first_page = self.__getFromAPI(s, url, auth_header, payload)
             if data_key:
                 yield first_page[data_key]
             else:
@@ -116,8 +122,7 @@ class chorusai:
 
             while page_val != None:
                 payload['continuation_key'] = page_val
-                next_page = s.get(url, headers=auth_header,
-                                  params=payload).json()
+                next_page = self.__getFromAPI(s, url, auth_header, payload)
                 if data_key:
                     if data_key not in next_page:
                         print('Error:')

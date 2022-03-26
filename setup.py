@@ -15,5 +15,5 @@ setuptools.setup(
      long_description_content_type="text/markdown",
 	 url="https://github.com/andyoneal/pychorusai",
 	 packages=setuptools.find_packages(),
-	 install_requires=['requests','python-dateutil']
+	 install_requires=['requests','python-dateutil','ratelimit']
  )
