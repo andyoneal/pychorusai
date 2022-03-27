@@ -1,6 +1,6 @@
 import requests
 from dateutil import parser, utils, tz
-from ratelimit import limits, sleep_and_retry
+import time
 
 TEN_MINUTES = 60 * 10
 
@@ -53,10 +53,18 @@ class chorusai:
         payload['page[size]'] = 100
         yield from self.getData(url, payload=payload, data_key='data', req_page_key='page[number]')
 
-    @sleep_and_retry
-    @limits(calls=10, period=TEN_MINUTES)
     def __getFromAPI(self, s: requests.Session, url: str, headers: str, params: dict = {}):
-        return s.get(url, headers=headers, params=params).json()
+        retry = 0
+        retry_limit = 5
+        while retry < retry_limit:
+            res = s.get(url, headers=headers, params=params)
+            if res.status_code == 429:
+                print("Request reached Rate Limit of 10/min: resume in 10 minutes.")
+                time.sleep(TEN_MINUTES)
+                retry += 1
+            else:
+                return res.json()
+        raise RuntimeError("Exceeded retry limit.")
 
     def __getData_v1(self, url=None, payload={}, req_page_key=None):
         if url is None:
