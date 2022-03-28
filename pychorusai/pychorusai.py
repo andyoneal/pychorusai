@@ -107,7 +107,7 @@ class chorusai:
                 payload[req_page_key] = page_val
                 next_page = self.__getFromAPI(url, auth_header, payload)
                 yield next_page[data_key]
-                page_val = first_page.get('meta', {}).get(
+                page_val = next_page.get('meta', {}).get(
                     'page', {}).get('cursor')
 
     def __getData_v3(self, url: str, payload: dict = {}, data_key: str = None):
