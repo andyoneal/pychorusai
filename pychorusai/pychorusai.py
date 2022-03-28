@@ -55,11 +55,11 @@ class chorusai:
         payload['page[size]'] = 100
         yield from self.getData(url, payload=payload, data_key='data', req_page_key='page[number]')
 
-    def __getFromAPI(self, s: requests.Session, url: str, headers: str, params: dict = {}):
+    def __getFromAPI(self, url: str, headers: str, params: dict = {}):
         retry = 0
         retry_limit = 5
         while retry < retry_limit:
-            res = s.get(url, headers=headers, params=params)
+            res = requests.get(url, headers=headers, params=params)
             if res.status_code == 429:
                 logger.warning(
                     "Request reached Rate Limit of 10/min: resume in 10 minutes.")
@@ -77,39 +77,38 @@ class chorusai:
         auth_header = self.auth_header
         data_key = 'data'
 
-        with requests.Session() as s:
-            first_page = self.__getFromAPI(s, url, auth_header, payload)
-            if isinstance(first_page, dict) and 'errors' in first_page.keys():
-                logger.error(first_page['errors'])
-                return
-            yield first_page.get(data_key)
+        first_page = self.__getFromAPI(url, auth_header, payload)
+        if isinstance(first_page, dict) and 'errors' in first_page.keys():
+            logger.error(first_page['errors'])
+            return
+        yield first_page.get(data_key)
 
-            if not req_page_key:
-                return
+        if not req_page_key:
+            return
 
-            if req_page_key == 'page[number]':
-                payload[req_page_key] = 1
-                num_returned = len(first_page[data_key])
-                page_size = payload.get('page[size]')
-                while num_returned == page_size:
-                    payload[req_page_key] += 1
-                    next_page = self.__getFromAPI(s, url, auth_header, payload)
-                    if isinstance(first_page, dict) and 'errors' in first_page.keys():
-                        logger.error(next_page['errors'])
-                        return
-                    yield next_page[data_key]
-                    num_returned = len(next_page)
+        if req_page_key == 'page[number]':
+            payload[req_page_key] = 1
+            num_returned = len(first_page[data_key])
+            page_size = payload.get('page[size]')
+            while num_returned == page_size:
+                payload[req_page_key] += 1
+                next_page = self.__getFromAPI(url, auth_header, payload)
+                if isinstance(first_page, dict) and 'errors' in first_page.keys():
+                    logger.error(next_page['errors'])
+                    return
+                yield next_page[data_key]
+                num_returned = len(next_page)
 
-            else:
+        else:
+            page_val = first_page.get('meta', {}).get(
+                'page', {}).get('cursor')
+
+            while page_val != None:
+                payload[req_page_key] = page_val
+                next_page = self.__getFromAPI(url, auth_header, payload)
+                yield next_page[data_key]
                 page_val = first_page.get('meta', {}).get(
                     'page', {}).get('cursor')
-
-                while page_val != None:
-                    payload[req_page_key] = page_val
-                    next_page = self.__getFromAPI(s, url, auth_header, payload)
-                    yield next_page[data_key]
-                    page_val = first_page.get('meta', {}).get(
-                        'page', {}).get('cursor')
 
     def __getData_v3(self, url: str, payload: dict = {}, data_key: str = None):
         if url is None:
@@ -118,29 +117,28 @@ class chorusai:
 
         auth_header = self.auth_header
 
-        with requests.Session() as s:
-            first_page = self.__getFromAPI(s, url, auth_header, payload)
+        first_page = self.__getFromAPI(url, auth_header, payload)
+        if data_key:
+            yield first_page[data_key]
+        else:
+            yield first_page
+
+        if not isinstance(first_page, dict):
+            return
+        page_val = first_page.get('continuation_key')
+
+        while page_val != None:
+            payload['continuation_key'] = page_val
+            next_page = self.__getFromAPI(url, auth_header, payload)
             if data_key:
-                yield first_page[data_key]
+                if data_key not in next_page:
+                    logger.error(next_page)
+                    return
+                yield next_page[data_key]
             else:
-                yield first_page
+                yield next_page
 
-            if not isinstance(first_page, dict):
-                return
             page_val = first_page.get('continuation_key')
-
-            while page_val != None:
-                payload['continuation_key'] = page_val
-                next_page = self.__getFromAPI(s, url, auth_header, payload)
-                if data_key:
-                    if data_key not in next_page:
-                        logger.error(next_page)
-                        return
-                    yield next_page[data_key]
-                else:
-                    yield next_page
-
-                page_val = first_page.get('continuation_key')
 
     def getData(self, url: str, payload: dict = {}, data_key: str = None, req_page_key: str = None):
         if 'v3' in url:
