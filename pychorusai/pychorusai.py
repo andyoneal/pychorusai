@@ -4,7 +4,7 @@ import time
 import logging
 logger = logging.getLogger(__name__)
 
-TEN_MINUTES = 60 * 10
+ONE_MINUTE = 60
 
 
 class chorusai:
@@ -62,8 +62,8 @@ class chorusai:
             res = requests.get(url, headers=headers, params=params)
             if res.status_code == 429:
                 logger.warning(
-                    "Request reached Rate Limit of 10/min: resume in 10 minutes.")
-                time.sleep(TEN_MINUTES)
+                    "Request reached Rate Limit of 10/min: resume in 1 minute.")
+                time.sleep(ONE_MINUTE)
                 retry += 1
             else:
                 return res.json()
