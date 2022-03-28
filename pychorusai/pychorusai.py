@@ -127,7 +127,7 @@ class chorusai:
             return
         page_val = first_page.get('continuation_key')
 
-        while page_val != None:
+        while page_val != ' ':
             payload['continuation_key'] = page_val
             next_page = self.__getFromAPI(url, auth_header, payload)
             if data_key:
