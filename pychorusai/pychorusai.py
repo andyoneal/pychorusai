@@ -1,6 +1,8 @@
 import requests
 from dateutil import parser, utils, tz
 import time
+import logging
+logger = logging.getLogger(__name__)
 
 TEN_MINUTES = 60 * 10
 
@@ -59,7 +61,8 @@ class chorusai:
         while retry < retry_limit:
             res = s.get(url, headers=headers, params=params)
             if res.status_code == 429:
-                print("Request reached Rate Limit of 10/min: resume in 10 minutes.")
+                logger.warning(
+                    "Request reached Rate Limit of 10/min: resume in 10 minutes.")
                 time.sleep(TEN_MINUTES)
                 retry += 1
             else:
@@ -68,7 +71,7 @@ class chorusai:
 
     def __getData_v1(self, url=None, payload={}, req_page_key=None):
         if url is None:
-            print('URL missing')
+            logger.error('URL missing')
             return None
 
         auth_header = self.auth_header
@@ -77,8 +80,7 @@ class chorusai:
         with requests.Session() as s:
             first_page = self.__getFromAPI(s, url, auth_header, payload)
             if isinstance(first_page, dict) and 'errors' in first_page.keys():
-                print('Error:')
-                print(first_page['errors'])
+                logger.error(first_page['errors'])
                 return
             yield first_page.get(data_key)
 
@@ -93,8 +95,7 @@ class chorusai:
                     payload[req_page_key] += 1
                     next_page = self.__getFromAPI(s, url, auth_header, payload)
                     if isinstance(first_page, dict) and 'errors' in first_page.keys():
-                        print('Error:')
-                        print(next_page['errors'])
+                        logger.error(next_page['errors'])
                         return
                     yield next_page[data_key]
                     num_returned = len(next_page)
@@ -112,7 +113,7 @@ class chorusai:
 
     def __getData_v3(self, url: str, payload: dict = {}, data_key: str = None):
         if url is None:
-            print('URL missing')
+            logger.error('URL missing')
             return None
 
         auth_header = self.auth_header
@@ -133,8 +134,7 @@ class chorusai:
                 next_page = self.__getFromAPI(s, url, auth_header, payload)
                 if data_key:
                     if data_key not in next_page:
-                        print('Error:')
-                        print(next_page)
+                        logger.error(next_page)
                         return
                     yield next_page[data_key]
                 else:

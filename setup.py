@@ -6,7 +6,7 @@ with open("README.md", "r") as d:
 
 setuptools.setup(
 	 name='pychorusai',  
-	 version='0.2',
+	 version='0.2.1',
 	 author="Andy O'Neal",
 	 author_email="andyoneal@me.com",
 	 license="MIT",
@@ -15,5 +15,5 @@ setuptools.setup(
      long_description_content_type="text/markdown",
 	 url="https://github.com/andyoneal/pychorusai",
 	 packages=setuptools.find_packages(),
-	 install_requires=['requests','python-dateutil','ratelimit']
+	 install_requires=['requests','python-dateutil']
  )
