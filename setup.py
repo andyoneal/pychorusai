@@ -6,7 +6,7 @@ with open("README.md", "r") as d:
 
 setuptools.setup(
 	 name='pychorusai',  
-	 version='0.2.1',
+	 version='0.2.2',
 	 author="Andy O'Neal",
 	 author_email="andyoneal@me.com",
 	 license="MIT",
