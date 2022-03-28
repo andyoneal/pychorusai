@@ -138,7 +138,7 @@ class chorusai:
             else:
                 yield next_page
 
-            page_val = first_page.get('continuation_key')
+            page_val = next_page.get('continuation_key')
 
     def getData(self, url: str, payload: dict = {}, data_key: str = None, req_page_key: str = None):
         if 'v3' in url:
