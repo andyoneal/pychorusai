@@ -32,7 +32,16 @@ class chorusai:
         payload['filter[email.sent]'] = self.__comboDateRangeStr(
             min_date, max_date)
         payload['page[size]'] = 100
-        yield from self.getData(url, payload=payload, data_key='data', req_page_key='page[after]')
+        for page in self.getData(url, payload=payload, data_key='data', req_page_key='page[after]'):
+            new_page = []
+            for row in page:
+                id = row['id']
+                type = row['type']
+                actual_row = row['attributes']
+                actual_row['id'] = id
+                actual_row['type'] = type
+                new_page.append(actual_row)
+            yield new_page
 
     def getScorecards(self, min_date=None, max_date=None):
         url = 'https://chorus.ai/api/v1/scorecards'
@@ -50,7 +59,6 @@ class chorusai:
                 actual_row['type'] = type
                 new_page.append(actual_row)
             yield new_page
-        # yield from self.getData(url, payload=payload, data_key='data', req_page_key='page[number]')
 
     def getExternalMoments(self, min_date=None, max_date=None):
         url = 'https://chorus.ai/api/v1/moments'
